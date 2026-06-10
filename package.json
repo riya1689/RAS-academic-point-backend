@@ -2,9 +2,13 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/server.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node dist/server.js",
+    "dev": "nodemon src/server.ts",
+    "build": "tsc"
   },
   "keywords": [],
   "author": "",
@@ -17,7 +21,9 @@
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "@types/node": "^20.11.0",
     "typescript": "^6.0.3"
   }
 }

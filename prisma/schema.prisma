@@ -1,13 +1,164 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
-generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
-}
-
 datasource db {
   provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+  GUARDIAN
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  image     String?
+  createdAt DateTime @default(now())
+
+  student   Student?
+  teacher   Teacher?
+  guardian  Guardian?
+}
+
+model Student {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  class      String
+  roll       String
+  department String
+  schoolName String
+  email      String?
+  phone      String
+
+  guardians  Guardian[]
+  classrooms ClassroomMember[]
+  attendance Attendance[]
+  results    Result[]
+  payments   TuitionPayment[]
+}
+
+model Teacher {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teacherId     String   @unique
+  department    String
+  qualification String
+
+  classrooms    Classroom[]
+  sessions      Session[]
+}
+
+model Guardian {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model Classroom {
+  id            String   @id @default(uuid())
+  teacherId     String
+  teacher       Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  classroomCode String   @unique
+  title         String
+  createdAt     DateTime @default(now())
+
+  members       ClassroomMember[]
+  attendance    Attendance[]
+}
+
+model ClassroomMember {
+  id          String    @id @default(uuid())
+  classroomId String
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  studentId   String
+  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([classroomId, studentId])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+}
+
+model Attendance {
+  id          String           @id @default(uuid())
+  studentId   String
+  student     Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classroomId String
+  classroom   Classroom        @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  date        DateTime
+  status      AttendanceStatus
+
+  @@unique([studentId, classroomId, date])
+}
+
+model Exam {
+  id       String   @id @default(uuid())
+  name     String
+  examDate DateTime
+  results  Result[]
+}
+
+enum ResultStatus {
+  PASS
+  FAIL
+}
+
+model Result {
+  id          String       @id @default(uuid())
+  studentId   String
+  student     Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  examId      String
+  exam        Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  subject     String
+  writtenMark Float
+  mcqMark     Float
+  totalMark   Float
+  result      ResultStatus
+
+  @@unique([studentId, examId, subject])
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+  PENDING
+}
+
+enum PaymentMethod {
+  ONLINE
+  CASH
+}
+
+model TuitionPayment {
+  id            String         @id @default(uuid())
+  studentId     String
+  student       Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  month         String
+  amount        Float
+  status        PaymentStatus  @default(UNPAID)
+  paymentMethod PaymentMethod?
+  paymentDate   DateTime?
+  createdAt     DateTime       @default(now())
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  teacherId String
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  date      DateTime
+  time      String
+  meetLink  String?
 }

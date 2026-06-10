@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 
+  postgres:
+    image: postgres:15-alpine 
+    container_name: ras_postgres 
+    environment:
+      POSTGRES_USER: admin 
+      POSTGRES_PASSWORD: adminpassword 
+      POSTGRES_DB: ras_academic_point 
+    ports:
+      - "5432:5432" 
+
+  # Redis 
+  redis:
+    image: redis:alpine 
+    container_name: ras_redis
+    ports:
+      - "6379:6379" 

@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { auth } from "../auth.js";
+import jwt from "jsonwebtoken";
 
 export interface AuthRequest extends Request {
   user?: typeof auth.$Infer.Session.user;
@@ -16,27 +17,59 @@ export const requireAuth = async (
       headers: req.headers,
     });
 
-    if (!session) {
-      return res.status(401).json({ message: "Please login first (Unauthorized)" });
+    if (session) {
+      req.user = session.user;
+      req.session = session.session;
+      return next();
     }
 
-    req.user = session.user;
-    req.session = session.session;
+    const authHeader = req.headers.authorization;
 
-    next();
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const token = authHeader.split(" ")[1];
+
+      const decoded = jwt.verify(
+        token,
+        process.env.JWT_SECRET || "default_jwt_secret_key_123"
+      ) as any;
+
+      req.user = {
+        id: decoded.id,
+        email: decoded.email,
+        role: decoded.role,
+        name: decoded.name || "",
+        emailVerified: true,
+        image: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      return next();
+    }
+
+    return res.status(401).json({
+      message: "Please login first (Unauthorized)"
+    });
   } catch (error) {
-    res.status(500).json({ message: "Server Error (Auth Middleware Error)", error });
+    return res.status(401).json({
+      message: "Invalid token or session expired. Please login again.",
+      error
+    });
   }
 };
 
 export const requireRole = (allowedRoles: string[]) => {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
-      return res.status(401).json({ message: "Please login first (Unauthorized)" });
+      return res.status(401).json({
+        message: "Please login first (Unauthorized)"
+      });
     }
 
     if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ message: "Unauthorized access (Forbidden)" });
+      return res.status(403).json({
+        message: "Permission denied (Forbidden Access)"
+      });
     }
 
     next();

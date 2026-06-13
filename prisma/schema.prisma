@@ -96,7 +96,7 @@ model Teacher {
   qualification String
 
   classrooms    Classroom[]
-  sessions      Session[]
+  supportSessions SupportSession[]
 }
 
 model Guardian {
@@ -196,7 +196,7 @@ model TuitionPayment {
   createdAt     DateTime       @default(now())
 }
 
-model Session {
+model SupportSession {
   id        String   @id @default(uuid())
   teacherId String
   teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)

@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth.js";
 import { prisma } from './db.js';
+import authRoutes from './routes/auth.routes.js';
 
 dotenv.config();
 

@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
 app.use(cors());
-app.all("/api/auth/*", toNodeHandler(auth));
+app.all("/api/auth/*wildcard", toNodeHandler(auth));
 
 let dbStatus = "Not Connected";
 let authStatus = "Not Connected";

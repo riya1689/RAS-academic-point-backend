@@ -2,7 +2,7 @@ import { Router } from "express";
 import { prisma } from "../db.js";
 import { requireAuth, requireRole } from "../middleware/auth.middleware.js";
 
-const router = Router();
+const router: Router = Router();
 
 router.post(
   "/",
@@ -45,9 +45,11 @@ router.get(
   async (req: any, res: any) => {
     try {
       const teacher = await prisma.teacher.findUnique({ where: { userId: req.user.id } });
-      
+      if (!teacher) {
+        return res.status(404).json({ message: "Teacher profile not found" });
+      }
       const classrooms = await prisma.classroom.findMany({
-        where: { teacherId: teacher?.id },
+        where: { teacherId: teacher.id },
         include: { members: true },
       });
       return res.status(200).json({ classrooms });
@@ -118,9 +120,11 @@ router.get(
   async (req: any, res: any) => {
     try {
       const student = await prisma.student.findUnique({ where: { userId: req.user.id } });
-      
+      if (!student) {
+        return res.status(404).json({ message: "Student profile not found" });
+      }
       const classroomMembers = await prisma.classroomMember.findMany({
-        where: { studentId: student?.id },
+        where: { studentId: student.id },
         include: { 
           classroom: {
             include: { teacher: { include: { user: true } } }
@@ -128,7 +132,7 @@ router.get(
         },
       });
 
-      const classrooms = classroomMembers.map(member => member.classroom);
+      const classrooms = (classroomMembers as any[]).map(member => member.classroom);
       
       return res.status(200).json({ classrooms });
     } catch (error) {
@@ -148,8 +152,11 @@ router.post(
       const { date, records } = req.body;
 
       const teacher = await prisma.teacher.findUnique({ where: { userId: req.user.id } });
+      if (!teacher) {
+        return res.status(404).json({ message: "Teacher profile not found" });
+      }
       const classroom = await prisma.classroom.findFirst({
-        where: { id: classroomId, teacherId: teacher?.id }
+        where: { id: classroomId, teacherId: teacher.id }
       });
 
       if (!classroom) {
@@ -196,9 +203,11 @@ router.get(
     try {
       const { classroomId } = req.params;
       const student = await prisma.student.findUnique({ where: { userId: req.user.id } });
-
+      if (!student) {
+        return res.status(404).json({ message: "Student profile not found" });
+      }
       const attendance = await prisma.attendance.findMany({
-        where: { classroomId, studentId: student?.id },
+        where: { classroomId, studentId: student.id },
         orderBy: { date: "desc" }
       });
 

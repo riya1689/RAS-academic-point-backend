@@ -4,7 +4,7 @@ import redis from "../redis.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
-const router = express.Router();
+const router: express.Router = express.Router();
 
 const sendOTPEmail = (email: string, otp: string) => {
   console.log(`✉️ [Email Sent] sending OTP to: ${email} | OTP: ${otp}`);

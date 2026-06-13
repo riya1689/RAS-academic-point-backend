@@ -3,8 +3,8 @@ import { auth } from "../auth.js";
 import jwt from "jsonwebtoken";
 
 export interface AuthRequest extends Request {
-  user?: typeof auth.$Infer.Session.user;
-  session?: typeof auth.$Infer.Session.session;
+  user?: any;
+  session?: any;
 }
 
 export const requireAuth = async (
@@ -14,7 +14,7 @@ export const requireAuth = async (
 ) => {
   try {
     const session = await auth.api.getSession({
-      headers: req.headers,
+      headers: new Headers(req.headers as any),
     });
 
     if (session) {
@@ -27,6 +27,11 @@ export const requireAuth = async (
 
     if (authHeader && authHeader.startsWith("Bearer ")) {
       const token = authHeader.split(" ")[1];
+      if (!token) {
+        return res.status(401).json({
+          message: "Please login first (Unauthorized)"
+        });
+      }
 
       const decoded = jwt.verify(
         token,

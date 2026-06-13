@@ -2,10 +2,14 @@ import express  from 'express';
 import type { Application, Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { createServer } from "http";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth.js";
 import { prisma } from './db.js';
+import { initSocket } from "./socket.js";
 import authRoutes from './routes/auth.routes.js';
+import classroomRoutes from './routes/classroom.routes.js';
+import supportRoutes from './routes/support.routes.js';
 
 dotenv.config();
 
@@ -14,6 +18,11 @@ const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
 app.use(cors());
+
+app.use("/api/custom-auth", authRoutes);
+app.use("/api/classrooms", classroomRoutes);
+app.use("/api/support-sessions", supportRoutes);
+
 app.all("/api/auth/*wildcard", toNodeHandler(auth));
 
 let dbStatus = "Not Connected";
@@ -33,18 +42,21 @@ async function startServer() {
   }
 }
 
-  app.get("/", (req: Request, res: Response) => {
-    res.json({
-      app: "RAS Academic Point API",
-      server: "Running",
-      database: dbStatus,
-      betterAuth: authStatus,
-      uptime: process.uptime(),
-      timestamp: new Date().toISOString(),
-    });
+app.get("/", (req: Request, res: Response) => {
+  res.json({
+    app: "RAS Academic Point API",
+    server: "Running",
+    database: dbStatus,
+    betterAuth: authStatus,
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
   });
+});
 
-app.listen(PORT, () => {
+const httpServer = createServer(app);
+initSocket(httpServer);
+
+httpServer.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
 

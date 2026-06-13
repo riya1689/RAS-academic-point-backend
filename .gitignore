@@ -63,3 +63,4 @@ temp/
 scratch/
 prisma/migrations/
 
+.vercel

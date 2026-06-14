@@ -2,6 +2,7 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./db.js";
 import redis from "./redis.js";
+import { sendOTPEmail } from "./utils/mailer.js";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -38,7 +39,7 @@ export const auth = betterAuth({
 
               await redis.set(`otp:${user.email}`, otp, "EX", 300);
 
-              console.log(`[Google Auth] OTP sent to ${user.email}: ${otp}`);
+              await sendOTPEmail(user.email, otp);
             }
           }
         },

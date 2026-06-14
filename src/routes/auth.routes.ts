@@ -42,10 +42,11 @@ router.post("/signup/student", async (req, res) => {
     return res.status(200).json({
       message: "An OTP has send to your mail. Please verify."
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Student signup error:", error);
     return res.status(500).json({
       message: "Student signup process failed.",
-      error
+      error: error.message || error
     });
   }
 });
@@ -66,12 +67,14 @@ router.post("/signup/teacher", async (req, res) => {
 
     await redis.set(`otp:${email}`, otp, "EX", 300);
 
+    const finalTeacherId = teacherId || `TCH-${Math.floor(1000 + Math.random() * 9000)}`;
+
     const teacherData = {
       email,
       hashedPassword,
       name,
       role: "TEACHER",
-      teacherId,
+      teacherId: finalTeacherId,
       department,
       qualification
     };
@@ -83,10 +86,11 @@ router.post("/signup/teacher", async (req, res) => {
     return res.status(200).json({
       message: "An OTP has send to your mail. Please verify."
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Teacher signup error:", error);
     return res.status(500).json({
       message: "Teacher signup process failed.",
-      error
+      error: error.message || error
     });
   }
 });
@@ -122,10 +126,11 @@ router.post("/signup/guardian", async (req, res) => {
     return res.status(200).json({
       message: "An OTP has send to your mail. Please verify."
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Guardian signup error:", error);
     return res.status(500).json({
       message: "Guardian signup process failed.",
-      error
+      error: error.message || error
     });
   }
 });
@@ -252,10 +257,11 @@ router.post("/otp/verify", async (req, res) => {
         },
       });
     }
-  } catch (error) {
+  } catch (error: any) {
+    console.error("OTP verification error:", error);
     return res.status(500).json({
       message: "OTP verification process failed.",
-      error
+      error: error.message || error
     });
   }
 });

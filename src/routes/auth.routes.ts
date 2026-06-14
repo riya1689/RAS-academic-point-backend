@@ -3,12 +3,9 @@ import { prisma } from "../db.js";
 import redis from "../redis.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { sendOTPEmail } from "../utils/mailer.js";
 
 const router: express.Router = express.Router();
-
-const sendOTPEmail = (email: string, otp: string) => {
-  console.log(`✉️ [Email Sent] sending OTP to: ${email} | OTP: ${otp}`);
-};
 
 router.post("/signup/student", async (req, res) => {
   try {

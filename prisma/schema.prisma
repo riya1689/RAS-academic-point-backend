@@ -97,6 +97,7 @@ model Teacher {
 
   classrooms    Classroom[]
   supportSessions SupportSession[]
+  salaries      TeacherSalary[]
 }
 
 model Guardian {
@@ -203,4 +204,15 @@ model SupportSession {
   date      DateTime
   time      String
   meetLink  String?
+}
+
+model TeacherSalary {
+  id          String        @id @default(uuid())
+  teacherId   String
+  teacher     Teacher       @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  month       String
+  amount      Float
+  status      PaymentStatus @default(PENDING)
+  paymentDate DateTime?
+  createdAt   DateTime      @default(now())
 }

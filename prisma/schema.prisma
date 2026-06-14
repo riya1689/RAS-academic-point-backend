@@ -161,16 +161,20 @@ enum ResultStatus {
 }
 
 model Result {
-  id          String       @id @default(uuid())
-  studentId   String
-  student     Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  examId      String
-  exam        Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
-  subject     String
-  writtenMark Float
-  mcqMark     Float
-  totalMark   Float
-  result      ResultStatus
+  id                String       @id @default(uuid())
+  studentId         String
+  student           Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  examId            String
+  exam              Exam         @relation(fields: [examId], references: [id], onDelete: Cascade)
+  subject           String
+  writtenMark       Float
+  mcqMark           Float
+  practicalMark     Float?       // Nullable for practical marks
+  totalMark         Float
+  writtenPassMark   Float        @default(40)
+  mcqPassMark       Float        @default(15)
+  practicalPassMark Float?       @default(0)
+  result            ResultStatus
 
   @@unique([studentId, examId, subject])
 }

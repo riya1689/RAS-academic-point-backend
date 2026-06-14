@@ -11,6 +11,7 @@ import authRoutes from './routes/auth.routes.js';
 import classroomRoutes from './routes/classroom.routes.js';
 import supportRoutes from './routes/support.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
+import resultRoutes from './routes/result.routes.js';
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.use("/api/custom-auth", authRoutes);
 app.use("/api/classrooms", classroomRoutes);
 app.use("/api/support-sessions", supportRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api", resultRoutes);
 
 app.all("/api/auth/*wildcard", toNodeHandler(auth));
 

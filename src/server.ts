@@ -10,18 +10,24 @@ import { initSocket } from "./socket.js";
 import authRoutes from './routes/auth.routes.js';
 import classroomRoutes from './routes/classroom.routes.js';
 import supportRoutes from './routes/support.routes.js';
+import paymentRoutes from './routes/payment.routes.js';
 
 dotenv.config();
 
 const app: Application = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(express.json());
+app.use(express.json({
+  verify: (req: any, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 app.use(cors());
 
 app.use("/api/custom-auth", authRoutes);
 app.use("/api/classrooms", classroomRoutes);
 app.use("/api/support-sessions", supportRoutes);
+app.use("/api/payments", paymentRoutes);
 
 app.all("/api/auth/*wildcard", toNodeHandler(auth));
 
@@ -56,8 +62,12 @@ app.get("/", (req: Request, res: Response) => {
 const httpServer = createServer(app);
 initSocket(httpServer);
 
-httpServer.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+if (!process.env.VERCEL) {
+  httpServer.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+  });
+}
 
 startServer();
+
+export default app;

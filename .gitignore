@@ -64,3 +64,5 @@ scratch/
 prisma/migrations/
 
 .vercel
+test_mail.js
+test_mail.cjs

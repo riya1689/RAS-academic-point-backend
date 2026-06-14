@@ -2,7 +2,7 @@ import nodemailer from "nodemailer";
 
 const host = process.env.SMTP_HOST || "smtp-relay.brevo.com";
 const port = parseInt(process.env.SMTP_PORT || "587");
-const user = process.env.SMTP_FROM_EMAIL || "riyaratri24@gmail.com";
+const user = process.env.SMTP_USER || process.env.SMTP_FROM_EMAIL || "riyaratri24@gmail.com";
 const pass = process.env.SMTP_PASS;
 
 const transporter = nodemailer.createTransport({

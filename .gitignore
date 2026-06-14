@@ -58,8 +58,8 @@ temp/
 .eslintcache
 
 # Misc
-*.tgz
 /src/generated/prisma
+/src/generated/client
 scratch/
 prisma/migrations/
 

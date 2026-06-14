@@ -25,7 +25,7 @@ app.use(express.json({
 }));
 app.use(cors());
 
-app.use("/api/custom-auth", authRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/classrooms", classroomRoutes);
 app.use("/api/support-sessions", supportRoutes);
 app.use("/api/payments", paymentRoutes);

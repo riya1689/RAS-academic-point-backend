@@ -1,26 +1,34 @@
 import nodemailer from "nodemailer";
 
-const host = process.env.SMTP_HOST || "smtp-relay.brevo.com";
-const port = parseInt(process.env.SMTP_PORT || "587");
-const user = process.env.SMTP_USER || process.env.SMTP_FROM_EMAIL || "riyaratri24@gmail.com";
-const pass = process.env.SMTP_PASS;
+let transporter: nodemailer.Transporter | null = null;
 
-const transporter = nodemailer.createTransport({
-  host,
-  port,
-  secure: port === 465, // true for 465, false for 587 or other ports
-  auth: {
-    user,
-    pass,
-  },
-});
+const getTransporter = () => {
+  if (!transporter) {
+    const host = process.env.SMTP_HOST || "smtp-relay.brevo.com";
+    const port = parseInt(process.env.SMTP_PORT || "587");
+    const user = process.env.SMTP_USER || process.env.SMTP_FROM_EMAIL || "riyaratri24@gmail.com";
+    const pass = process.env.SMTP_PASS;
+
+    transporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465, // true for 465, false for 587 or other ports
+      auth: {
+        user,
+        pass,
+      },
+    });
+  }
+  return transporter;
+};
 
 export const sendOTPEmail = async (email: string, otp: string) => {
   try {
     const fromName = process.env.SMTP_FROM_NAME || "RAS Academic Point";
     const fromEmail = process.env.SMTP_FROM_EMAIL || "riyaratri24@gmail.com";
 
-    await transporter.sendMail({
+    const mailTransporter = getTransporter();
+    await mailTransporter.sendMail({
       from: `"${fromName}" <${fromEmail}>`,
       to: email,
       subject: "Verification OTP - RAS Academic Point",

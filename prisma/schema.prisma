@@ -48,6 +48,8 @@ model Student {
   attendance Attendance[]
   results    Result[]
   payments   TuitionPayment[]
+  oneToOneBookings OneToOneBooking[]
+  waitlistEntries  WaitlistEntry[]
 }
 
 // Session Model 
@@ -99,6 +101,8 @@ model Teacher {
   classrooms    Classroom[]
   supportSessions SupportSession[]
   salaries      TeacherSalary[]
+  availabilitySlots AvailabilitySlot[]
+  googleAuth        TeacherGoogleAuth?
 }
 
 model Guardian {
@@ -220,4 +224,53 @@ model TeacherSalary {
   status      PaymentStatus @default(PENDING)
   paymentDate DateTime?
   createdAt   DateTime      @default(now())
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+model AvailabilitySlot {
+  id          String   @id @default(uuid())
+  teacherId   String
+  teacher     Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  slotStart   DateTime
+  slotEnd     DateTime
+  isBooked    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  booking     OneToOneBooking?
+  waitlist    WaitlistEntry[]
+}
+
+model OneToOneBooking {
+  id          String         @id @default(uuid())
+  studentId   String
+  student     Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  slotId      String         @unique
+  slot        AvailabilitySlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  meetLink    String?
+  description String?
+  status      BookingStatus  @default(CONFIRMED)
+  createdAt   DateTime       @default(now())
+}
+
+model WaitlistEntry {
+  id          String         @id @default(uuid())
+  studentId   String
+  student     Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  slotId      String
+  slot        AvailabilitySlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  joinedAt    DateTime       @default(now())
+}
+
+model TeacherGoogleAuth {
+  id           String   @id @default(uuid())
+  teacherId    String   @unique
+  teacher      Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  accessToken  String
+  refreshToken String?
+  expiryDate   DateTime?
+  updatedAt    DateTime @updatedAt
 }

@@ -179,7 +179,9 @@ router.get(
       const date = authReq.query.date as string;
       const teacherId = authReq.query.teacherId as string;
 
-      let where: any = {};
+      let where: any = {
+        slotEnd: { gt: new Date() }
+      };
       if (teacherId) where.teacherId = teacherId;
       
       if (date) {
@@ -192,9 +194,6 @@ router.get(
           gte: startDate,
           lte: endDate,
         };
-      } else {
-        // Default to future slots only
-        where.slotStart = { gte: new Date() };
       }
 
       const slots = await prisma.availabilitySlot.findMany({

@@ -50,3 +50,51 @@ export const sendOTPEmail = async (email: string, otp: string) => {
     console.error("❌ Failed to send email via Brevo SMTP:", error);
   }
 };
+
+export const sendEmail = async (to: string, subject: string, html: string) => {
+  try {
+    const fromName = process.env.SMTP_FROM_NAME || "RAS Academic Point";
+    const fromEmail = process.env.SMTP_FROM_EMAIL || "riyaratri24@gmail.com";
+    const mailTransporter = getTransporter();
+    
+    await mailTransporter.sendMail({
+      from: `"${fromName}" <${fromEmail}>`,
+      to,
+      subject,
+      html,
+    });
+    console.log(`✉️ [SMTP Email Sent] Successfully sent email to: ${to} | Subject: ${subject}`);
+  } catch (error) {
+    console.error("❌ Failed to send email via Brevo SMTP:", error);
+  }
+};
+
+export const sendBookingConfirmation = async (email: string, date: string, time: string, teacherName: string, meetLink?: string) => {
+  const subject = "Booking Confirmed - 1-to-1 Session";
+  const html = `
+    <div style="font-family: sans-serif; padding: 20px; color: #1f2937;">
+      <h2 style="color: #10b981;">Booking Confirmed!</h2>
+      <p>Your 1-to-1 session with <strong>${teacherName}</strong> has been confirmed.</p>
+      <p><strong>Date:</strong> ${date}</p>
+      <p><strong>Time:</strong> ${time}</p>
+      ${meetLink ? `<p><strong>Google Meet Link:</strong> <a href="${meetLink}">${meetLink}</a></p>` : `<p>The meeting link will be updated soon.</p>`}
+      <p>Please be on time!</p>
+    </div>
+  `;
+  await sendEmail(email, subject, html);
+};
+
+export const sendWaitlistUpgrade = async (email: string, date: string, time: string, teacherName: string) => {
+  const subject = "You got the slot! - 1-to-1 Session";
+  const html = `
+    <div style="font-family: sans-serif; padding: 20px; color: #1f2937;">
+      <h2 style="color: #10b981;">Great News!</h2>
+      <p>A slot just opened up for your waitlisted 1-to-1 session with <strong>${teacherName}</strong>, and you have been automatically upgraded to Booked!</p>
+      <p><strong>Date:</strong> ${date}</p>
+      <p><strong>Time:</strong> ${time}</p>
+      <p>Check your dashboard for the Google Meet link.</p>
+    </div>
+  `;
+  await sendEmail(email, subject, html);
+};
+

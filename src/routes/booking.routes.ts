@@ -72,12 +72,12 @@ router.get(
         create: {
           teacherId,
           accessToken: tokens.access_token!,
-          refreshToken: tokens.refresh_token,
+          refreshToken: tokens.refresh_token ?? null,
           expiryDate: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
         },
         update: {
           accessToken: tokens.access_token!,
-          refreshToken: tokens.refresh_token || undefined,
+          ...(tokens.refresh_token ? { refreshToken: tokens.refresh_token } : {}),
           expiryDate: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
         },
       });
@@ -438,7 +438,7 @@ router.put(
   async (req: any, res: Response): Promise<void> => {
     try {
       const authReq = req as AuthRequest;
-      const bookingId = authReq.params.id;
+      const bookingId = authReq.params.id as string;
       
       const booking = await prisma.oneToOneBooking.findUnique({
         where: { id: bookingId },

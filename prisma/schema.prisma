@@ -242,6 +242,9 @@ model AvailabilitySlot {
 
   booking     OneToOneBooking?
   waitlist    WaitlistEntry[]
+
+  @@index([slotStart])
+  @@index([slotEnd])
 }
 
 model OneToOneBooking {

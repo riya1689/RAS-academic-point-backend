@@ -14,7 +14,7 @@ router.post(
   requireRole(["TEACHER"]),
   async (req: AuthRequest, res: Response): Promise<any> => {
     try {
-      const { date, time, meetLink } = req.body;
+      const { date, time, meetLink, startTime, endTime } = req.body;
 
       const teacher = await prisma.teacher.findUnique({
         where: { userId: req.user.id },
@@ -24,12 +24,18 @@ router.post(
         return res.status(404).json({ message: "Teacher profile not found" });
       }
 
+      const parsedDate = new Date(date);
+      const parsedStart = startTime ? new Date(startTime) : new Date(parsedDate);
+      const parsedEnd = endTime ? new Date(endTime) : new Date(parsedStart.getTime() + 2 * 60 * 60 * 1000); // default 2 hours
+
       const session = await prisma.supportSession.create({
         data: {
           teacherId: teacher.id,
-          date: new Date(date),
+          date: parsedDate,
           time,
           meetLink: meetLink || null,
+          startTime: parsedStart,
+          endTime: parsedEnd,
         },
       });
 
@@ -49,23 +55,21 @@ router.get(
   requireAuth,
   async (req: AuthRequest, res: Response): Promise<any> => {
     try {
-      const todayStart = new Date();
-      todayStart.setUTCHours(0, 0, 0, 0);
-
-      const todayEnd = new Date();
-      todayEnd.setUTCHours(23, 59, 59, 999);
+      const now = new Date();
 
       const sessions = await prisma.supportSession.findMany({
         where: {
-          date: {
-            gte: todayStart,
-            lte: todayEnd,
+          endTime: {
+            gt: now, // End time is in the future
           },
         },
         include: {
           teacher: {
             include: { user: true },
           },
+        },
+        orderBy: {
+          startTime: "asc",
         },
       });
 

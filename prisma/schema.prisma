@@ -213,6 +213,11 @@ model SupportSession {
   date      DateTime
   time      String
   meetLink  String?
+  startTime DateTime @default(now())
+  endTime   DateTime @default(now())
+
+  @@index([startTime])
+  @@index([endTime])
 }
 
 model TeacherSalary {

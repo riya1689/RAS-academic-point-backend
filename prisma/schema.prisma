@@ -42,6 +42,7 @@ model Student {
   schoolName String
   email      String?
   phone      String
+  role       Role     @default(STUDENT)
 
   guardians  Guardian[]
   classrooms ClassroomMember[]
@@ -97,6 +98,7 @@ model Teacher {
   teacherId     String   @unique
   department    String
   qualification String
+  role          Role     @default(TEACHER)
 
   classrooms    Classroom[]
   supportSessions SupportSession[]
@@ -111,6 +113,7 @@ model Guardian {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   studentId String
   student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  role      Role     @default(GUARDIAN)
 }
 
 model Classroom {

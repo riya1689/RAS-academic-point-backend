@@ -11,10 +11,18 @@ router.post("/signup/student", async (req, res) => {
   try {
     const { email, password, name, class: className, roll, department, schoolName, phone } = req.body;
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+      include: { student: true, teacher: true, guardian: true }
+    });
 
     if (existingUser) {
-      return res.status(400).json({ message: "Email already exists" });
+      const isOrphaned = !existingUser.student && !existingUser.teacher && !existingUser.guardian;
+      if (isOrphaned) {
+        await prisma.user.delete({ where: { id: existingUser.id } });
+      } else {
+        return res.status(400).json({ message: "Email already exists" });
+      }
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -55,10 +63,18 @@ router.post("/signup/teacher", async (req, res) => {
   try {
     const { email, password, name, teacherId, department, qualification } = req.body;
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+      include: { student: true, teacher: true, guardian: true }
+    });
 
     if (existingUser) {
-      return res.status(400).json({ message: "Email already exists" });
+      const isOrphaned = !existingUser.student && !existingUser.teacher && !existingUser.guardian;
+      if (isOrphaned) {
+        await prisma.user.delete({ where: { id: existingUser.id } });
+      } else {
+        return res.status(400).json({ message: "Email already exists" });
+      }
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -99,10 +115,18 @@ router.post("/signup/guardian", async (req, res) => {
   try {
     const { email, password, name, studentId } = req.body;
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+      include: { student: true, teacher: true, guardian: true }
+    });
 
     if (existingUser) {
-      return res.status(400).json({ message: "Email already exists" });
+      const isOrphaned = !existingUser.student && !existingUser.teacher && !existingUser.guardian;
+      if (isOrphaned) {
+        await prisma.user.delete({ where: { id: existingUser.id } });
+      } else {
+        return res.status(400).json({ message: "Email already exists" });
+      }
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -175,6 +199,7 @@ router.post("/otp/verify", async (req, res) => {
               schoolName: pendingData.schoolName,
               phone: pendingData.phone,
               email: pendingData.email,
+              role: "STUDENT",
             },
           });
         } else if (pendingData.role === "TEACHER") {
@@ -184,6 +209,7 @@ router.post("/otp/verify", async (req, res) => {
               teacherId: pendingData.teacherId,
               department: pendingData.department,
               qualification: pendingData.qualification,
+              role: "TEACHER",
             },
           });
         } else if (pendingData.role === "GUARDIAN") {
@@ -191,6 +217,7 @@ router.post("/otp/verify", async (req, res) => {
             data: {
               userId: user.id,
               studentId: pendingData.studentId,
+              role: "GUARDIAN",
             },
           });
         }
@@ -351,6 +378,7 @@ router.post("/complete-profile", async (req, res) => {
             schoolName: profileData.schoolName,
             phone: profileData.phone,
             email: usr.email,
+            role: "STUDENT",
           },
         });
       } else if (role === "TEACHER") {
@@ -360,6 +388,7 @@ router.post("/complete-profile", async (req, res) => {
             teacherId: profileData.teacherId,
             department: profileData.department,
             qualification: profileData.qualification,
+            role: "TEACHER",
           },
         });
       } else if (role === "GUARDIAN") {
@@ -367,6 +396,7 @@ router.post("/complete-profile", async (req, res) => {
           data: {
             userId: usr.id,
             studentId: profileData.studentId,
+            role: "GUARDIAN",
           },
         });
       }

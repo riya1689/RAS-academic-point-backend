@@ -45,7 +45,7 @@ router.post("/signup/student", async (req, res) => {
 
     await redis.set(`pending_signup:${email}`, JSON.stringify(studentData), "EX", 600);
 
-    sendOTPEmail(email, otp).catch(console.error);
+    await sendOTPEmail(email, otp).catch(console.error);
 
     return res.status(200).json({
       message: "An OTP has send to your mail. Please verify."
@@ -97,7 +97,7 @@ router.post("/signup/teacher", async (req, res) => {
 
     await redis.set(`pending_signup:${email}`, JSON.stringify(teacherData), "EX", 600);
 
-    sendOTPEmail(email, otp).catch(console.error);
+    await sendOTPEmail(email, otp).catch(console.error);
 
     return res.status(200).json({
       message: "An OTP has send to your mail. Please verify."
@@ -145,7 +145,7 @@ router.post("/signup/guardian", async (req, res) => {
 
     await redis.set(`pending_signup:${email}`, JSON.stringify(guardianData), "EX", 600);
 
-    sendOTPEmail(email, otp).catch(console.error);
+    await sendOTPEmail(email, otp).catch(console.error);
 
     return res.status(200).json({
       message: "An OTP has send to your mail. Please verify."
@@ -312,7 +312,7 @@ router.post("/login", async (req, res) => {
 
       await redis.set(`otp:${email}`, otp, "EX", 300);
 
-      sendOTPEmail(email, otp).catch(console.error);
+      await sendOTPEmail(email, otp).catch(console.error);
 
       return res.status(403).json({
         message: "Your email is not verified. An OTP has been sent to your email, please verify.",

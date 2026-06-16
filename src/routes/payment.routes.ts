@@ -266,7 +266,7 @@ router.post(
 router.get(
   "/students",
   requireAuth,
-  requireRole(["ADMIN"]),
+  requireRole(["ADMIN", "TEACHER"]),
   async (req: AuthRequest, res: Response): Promise<any> => {
     try {
       const students = await prisma.student.findMany({

@@ -169,7 +169,12 @@ router.get(
       const results = await prisma.result.findMany({
         where: whereClause,
         include: {
-          exam: true
+          exam: true,
+          student: {
+            include: {
+              user: true
+            }
+          }
         },
         orderBy: { subject: "asc" }
       });
@@ -209,7 +214,12 @@ router.get(
       const results = await prisma.result.findMany({
         where: whereClause,
         include: {
-          exam: true
+          exam: true,
+          student: {
+            include: {
+              user: true
+            }
+          }
         },
         orderBy: { subject: "asc" }
       });

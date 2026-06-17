@@ -22,6 +22,7 @@ model User {
   password  String
   role          Role      @default(STUDENT)
   image     String?
+  status        String    @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
   createdAt DateTime @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -42,6 +43,7 @@ model Student {
   schoolName String
   email      String?
   phone      String
+  year       String   @default("2026")
   role       Role     @default(STUDENT)
 
   guardians  Guardian[]
@@ -98,6 +100,9 @@ model Teacher {
   teacherId     String   @unique
   department    String
   qualification String
+  subject       String   @default("Bangla")
+  rating        Float    @default(4.5)
+  salary        Float    @default(40000)
   role          Role     @default(TEACHER)
 
   classrooms    Classroom[]
@@ -190,6 +195,7 @@ enum PaymentStatus {
   PAID
   UNPAID
   PENDING
+  REFUNDED
 }
 
 enum PaymentMethod {
@@ -216,6 +222,10 @@ model SupportSession {
   date      DateTime
   time      String
   meetLink  String?
+  subject   String   @default("Bangla")
+  status    String   @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELLED
+  duration  Int      @default(45)
+  totalJoinStudent Int @default(0)
   startTime DateTime @default(now())
   endTime   DateTime @default(now())
 
@@ -284,4 +294,14 @@ model TeacherGoogleAuth {
   refreshToken String?
   expiryDate   DateTime?
   updatedAt    DateTime @updatedAt
+}
+
+model SatisfactionRating {
+  id           String   @id @default(uuid())
+  class        String
+  subject      String
+  studentRate  Float
+  guardianRate Float
+  avgRate      Float
+  createdAt    DateTime @default(now())
 }

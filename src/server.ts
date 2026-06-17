@@ -13,6 +13,7 @@ import supportRoutes from './routes/support.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 import resultRoutes from './routes/result.routes.js';
 import bookingRoutes from './routes/booking.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.use("/api/support-sessions", supportRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api", resultRoutes);
 app.use("/api/bookings", bookingRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.all("/api/auth/*wildcard", toNodeHandler(auth));
 

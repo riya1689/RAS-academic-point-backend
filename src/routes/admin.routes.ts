@@ -7,6 +7,8 @@ import bcrypt from "bcrypt";
 
 const router: Router = Router();
 
+let supportSessionTarget = 300;
+
 // Apply auth and admin role middlewares to all routes here
 router.use(requireAuth);
 router.use(requireRole(["ADMIN"]));
@@ -519,11 +521,26 @@ router.get("/support-sessions", async (req: AuthRequest, res: Response): Promise
         pending: pendingCount,
         completed: completedCount,
         today: todayCount,
-        target: 300
+        target: supportSessionTarget
       }
     });
   } catch (error: any) {
     console.error("Failed to get support sessions:", error);
+    return res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+});
+
+// 10a. Update support session target
+router.put("/support-sessions/target", async (req: AuthRequest, res: Response): Promise<any> => {
+  try {
+    const { target } = req.body;
+    if (target === undefined || isNaN(Number(target))) {
+      return res.status(400).json({ message: "Invalid target value" });
+    }
+    supportSessionTarget = Number(target);
+    return res.status(200).json({ message: "Target updated successfully", target: supportSessionTarget });
+  } catch (error: any) {
+    console.error("Failed to update support session target:", error);
     return res.status(500).json({ message: "Internal server error", error: error.message });
   }
 });
@@ -790,6 +807,101 @@ router.get("/users", async (req: AuthRequest, res: Response): Promise<any> => {
     return res.status(200).json({ users });
   } catch (error: any) {
     console.error("Failed to get users:", error);
+    return res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+});
+
+// 18a. Create a user manually
+router.post("/users", async (req: AuthRequest, res: Response): Promise<any> => {
+  try {
+    const { name, email, password, role, status } = req.body;
+    if (!name || !email || !password || !role) {
+      return res.status(400).json({ message: "Required fields are missing" });
+    }
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ message: "User with this email already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          name,
+          email,
+          password: hashedPassword,
+          role,
+          emailVerified: true,
+          status: status || "ACTIVE"
+        }
+      });
+
+      if (role === "STUDENT") {
+        await tx.student.create({
+          data: {
+            userId: user.id,
+            class: "08",
+            roll: Math.floor(100 + Math.random() * 900).toString(),
+            department: "General",
+            schoolName: "RAS Academic School",
+            email,
+            phone: "01700000000",
+            role: "STUDENT"
+          }
+        });
+      } else if (role === "TEACHER") {
+        await tx.teacher.create({
+          data: {
+            userId: user.id,
+            teacherId: "T" + Math.floor(100 + Math.random() * 900).toString(),
+            department: "General",
+            qualification: "N/A",
+            subject: "General",
+            salary: 40000,
+            role: "TEACHER"
+          }
+        });
+      } else if (role === "GUARDIAN") {
+        const student = await tx.student.findFirst();
+        if (student) {
+          await tx.guardian.create({
+            data: {
+              userId: user.id,
+              studentId: student.id,
+              role: "GUARDIAN"
+            }
+          });
+        }
+      }
+
+      return user;
+    });
+
+    return res.status(201).json({ message: "User created successfully", user: newUser });
+  } catch (error: any) {
+    console.error("Failed to create user:", error);
+    return res.status(500).json({ message: "Internal server error", error: error.message });
+  }
+});
+
+// 18b. Delete a user manually
+router.delete("/users/:id", async (req: AuthRequest, res: Response): Promise<any> => {
+  try {
+    const id = req.params.id as string;
+    const user = await prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    await prisma.user.delete({
+      where: { id }
+    });
+
+    return res.status(200).json({ message: "User account deleted successfully" });
+  } catch (error: any) {
+    console.error("Failed to delete user:", error);
     return res.status(500).json({ message: "Internal server error", error: error.message });
   }
 });

@@ -1,7 +1,9 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express  from 'express';
 import type { Application, Request, Response } from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import { createServer } from "http";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./auth.js";
@@ -14,8 +16,6 @@ import paymentRoutes from './routes/payment.routes.js';
 import resultRoutes from './routes/result.routes.js';
 import bookingRoutes from './routes/booking.routes.js';
 import adminRoutes from './routes/admin.routes.js';
-
-dotenv.config();
 
 const app: Application = express();
 const PORT = process.env.PORT || 5000;

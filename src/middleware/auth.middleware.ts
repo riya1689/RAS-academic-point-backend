@@ -43,6 +43,7 @@ export const requireAuth = async (
         email: decoded.email,
         role: decoded.role,
         name: decoded.name || "",
+        enrolledClassIds: decoded.enrolledClassIds || [],
         emailVerified: true,
         image: null,
         createdAt: new Date(),

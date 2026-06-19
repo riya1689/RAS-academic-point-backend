@@ -53,6 +53,7 @@ model Student {
   payments   TuitionPayment[]
   oneToOneBookings OneToOneBooking[]
   waitlistEntries  WaitlistEntry[]
+  enrollments      Enrollment[]
 }
 
 // Session Model 
@@ -304,4 +305,23 @@ model SatisfactionRating {
   guardianRate Float
   avgRate      Float
   createdAt    DateTime @default(now())
+}
+
+model Enrollment {
+  id            String   @id @default(uuid())
+  studentId     String
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classId       String   // e.g., "CLASS_8", "CLASS_9", "SSC"
+  classRoll     String   @unique // Unique ID for this specific class
+  badge         String?  // Badge identifier
+  
+  // Payment tracking
+  transactionId String   @unique
+  invoiceNumber String   @unique
+  amountPaid    Float
+  
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now())
+
+  @@unique([studentId, classId]) // Fast lookup
 }

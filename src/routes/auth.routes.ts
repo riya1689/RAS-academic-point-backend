@@ -231,7 +231,8 @@ router.post("/otp/verify", async (req, res) => {
         {
           id: newUser.id,
           email: newUser.email,
-          role: newUser.role
+          role: newUser.role,
+          enrolledClassIds: []
         },
         process.env.JWT_SECRET || "default_jwt_secret_key_123",
         { expiresIn: "7d" }
@@ -244,7 +245,8 @@ router.post("/otp/verify", async (req, res) => {
           id: newUser.id,
           name: newUser.name,
           email: newUser.email,
-          role: newUser.role
+          role: newUser.role,
+          enrolledClassIds: []
         },
       });
     } else {
@@ -263,11 +265,23 @@ router.post("/otp/verify", async (req, res) => {
         data: { emailVerified: true },
       });
 
+      let enrolledClassIds: string[] = [];
+      if (updatedUser.role === "STUDENT") {
+        const student = await prisma.student.findUnique({
+          where: { userId: updatedUser.id },
+          include: { enrollments: true }
+        });
+        if (student) {
+          enrolledClassIds = student.enrollments.map(e => e.classId);
+        }
+      }
+
       const token = jwt.sign(
         {
           id: updatedUser.id,
           email: updatedUser.email,
-          role: updatedUser.role
+          role: updatedUser.role,
+          enrolledClassIds
         },
         process.env.JWT_SECRET || "default_jwt_secret_key_123",
         { expiresIn: "7d" }
@@ -280,7 +294,8 @@ router.post("/otp/verify", async (req, res) => {
           id: updatedUser.id,
           name: updatedUser.name,
           email: updatedUser.email,
-          role: updatedUser.role
+          role: updatedUser.role,
+          enrolledClassIds
         },
       });
     }
@@ -320,11 +335,23 @@ router.post("/login", async (req, res) => {
       });
     }
 
+    let enrolledClassIds: string[] = [];
+    if (user.role === "STUDENT") {
+      const student = await prisma.student.findUnique({
+        where: { userId: user.id },
+        include: { enrollments: true }
+      });
+      if (student) {
+        enrolledClassIds = student.enrollments.map(e => e.classId);
+      }
+    }
+
     const token = jwt.sign(
       {
         id: user.id,
         email: user.email,
-        role: user.role
+        role: user.role,
+        enrolledClassIds
       },
       process.env.JWT_SECRET || "default_jwt_secret_key_123",
       { expiresIn: "7d" }
@@ -337,7 +364,8 @@ router.post("/login", async (req, res) => {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        enrolledClassIds
       },
     });
   } catch (error) {
@@ -408,7 +436,8 @@ router.post("/complete-profile", async (req, res) => {
       {
         id: updatedUser.id,
         email: updatedUser.email,
-        role: updatedUser.role
+        role: updatedUser.role,
+        enrolledClassIds: []
       },
       process.env.JWT_SECRET || "default_jwt_secret_key_123",
       { expiresIn: "7d" }
@@ -421,7 +450,8 @@ router.post("/complete-profile", async (req, res) => {
         id: updatedUser.id,
         name: updatedUser.name,
         email: updatedUser.email,
-        role: updatedUser.role
+        role: updatedUser.role,
+        enrolledClassIds: []
       },
     });
   } catch (error) {

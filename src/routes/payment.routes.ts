@@ -114,6 +114,72 @@ router.post(
   }
 );
 
+router.post(
+  "/enroll/checkout",
+  requireAuth,
+  requireRole(["STUDENT"]),
+  async (req: AuthRequest, res: Response): Promise<any> => {
+    try {
+      const { classId, amount } = req.body;
+
+      if (!classId) {
+        return res.status(400).json({ message: "classId is required" });
+      }
+      if (!amount) {
+        return res.status(400).json({ message: "Amount is required" });
+      }
+
+      const student = await prisma.student.findUnique({
+        where: { userId: req.user.id },
+        include: { user: true, enrollments: true }
+      });
+
+      if (!student) {
+        return res.status(404).json({ message: "Student profile not found" });
+      }
+
+      // Check if already enrolled
+      const isAlreadyEnrolled = student.enrollments.some(e => e.classId === classId);
+      if (isAlreadyEnrolled) {
+        return res.status(400).json({ message: `Already enrolled in ${classId}` });
+      }
+
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        mode: "payment",
+        line_items: [
+          {
+            price_data: {
+              currency: "bdt",
+              product_data: {
+                name: `Enrollment - ${classId}`,
+                description: `Enrollment fee for ${classId} - Student: ${student.user.name}`
+              },
+              unit_amount: Math.round(amount * 100)
+            },
+            quantity: 1
+          }
+        ],
+        metadata: {
+          type: "enrollment",
+          studentId: student.id,
+          classId,
+          amount: String(amount)
+        },
+        success_url: `${frontendUrl}/dashboard/student?enrollment=success&classId=${classId}`,
+        cancel_url: `${frontendUrl}/dashboard/student?enrollment=cancel`
+      });
+
+      return res.status(200).json({ sessionId: session.id, checkoutUrl: session.url });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
 router.get(
   "/salary/my",
   requireAuth,
@@ -391,43 +457,90 @@ router.post(
       const session = event.data.object as any;
       const metadata = session.metadata;
 
-      if (metadata && metadata.studentId && metadata.month) {
+      if (metadata && metadata.studentId) {
         const studentId = metadata.studentId;
-        const month = metadata.month;
         const amount = parseFloat(metadata.amount);
+        const transactionId = session.payment_intent || session.id;
+        const invoiceNumber = `INV-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-        console.log(`💰 Verified payment for student: ${studentId}, month: ${month}, amount: ${amount}`);
+        if (metadata.type === "enrollment" || metadata.classId) {
+          const classId = metadata.classId;
+          console.log(`🎓 Verified enrollment payment for student: ${studentId}, classId: ${classId}, amount: ${amount}`);
 
-        try {
-          const existing = await prisma.tuitionPayment.findFirst({
-            where: { studentId, month }
-          });
-
-          if (existing) {
-            await prisma.tuitionPayment.update({
-              where: { id: existing.id },
-              data: {
-                status: "PAID",
-                amount,
-                paymentMethod: "ONLINE",
-                paymentDate: new Date()
+          try {
+            // Check if already exists to avoid duplicate webhook processing
+            const existing = await prisma.enrollment.findUnique({
+              where: {
+                studentId_classId: {
+                  studentId,
+                  classId
+                }
               }
             });
-          } else {
-            await prisma.tuitionPayment.create({
-              data: {
-                studentId,
-                month,
-                amount,
-                status: "PAID",
-                paymentMethod: "ONLINE",
-                paymentDate: new Date()
-              }
-            });
+
+            if (!existing) {
+              const count = await prisma.enrollment.count({
+                where: { classId }
+              });
+              const rollNum = String(count + 1).padStart(4, "0");
+              const cleanClassId = classId.replace(/[^a-zA-Z0-9]/g, "");
+              const classRoll = `R-${cleanClassId}-${rollNum}`;
+              const badge = `${classId}_badge`;
+
+              await prisma.enrollment.create({
+                data: {
+                  studentId,
+                  classId,
+                  classRoll,
+                  badge,
+                  transactionId,
+                  invoiceNumber,
+                  amountPaid: amount,
+                  status: "ACTIVE"
+                }
+              });
+              console.log(`✅ Enrollment record created for student ${studentId} in class ${classId}.`);
+            } else {
+              console.log(`⚠️ Enrollment already exists for student ${studentId} in class ${classId}.`);
+            }
+          } catch (error) {
+            console.error("❌ Failed to create enrollment record:", error);
           }
-          console.log(`✅ Database updated for student ${studentId} payment.`);
-        } catch (error) {
-          console.error("❌ Failed to update tuition payment record:", error);
+        } else if (metadata.month) {
+          const month = metadata.month;
+          console.log(`💰 Verified tuition payment for student: ${studentId}, month: ${month}, amount: ${amount}`);
+
+          try {
+            const existing = await prisma.tuitionPayment.findFirst({
+              where: { studentId, month }
+            });
+
+            if (existing) {
+              await prisma.tuitionPayment.update({
+                where: { id: existing.id },
+                data: {
+                  status: "PAID",
+                  amount,
+                  paymentMethod: "ONLINE",
+                  paymentDate: new Date()
+                }
+              });
+            } else {
+              await prisma.tuitionPayment.create({
+                data: {
+                  studentId,
+                  month,
+                  amount,
+                  status: "PAID",
+                  paymentMethod: "ONLINE",
+                  paymentDate: new Date()
+                }
+              });
+            }
+            console.log(`✅ Tuition payment updated for student ${studentId}.`);
+          } catch (error) {
+            console.error("❌ Failed to update tuition payment record:", error);
+          }
         }
       }
     }

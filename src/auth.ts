@@ -9,6 +9,12 @@ export const auth = betterAuth({
     provider: "postgresql",
   }),
   trustedOrigins: ["http://localhost:3000", process.env.FRONTEND_URL || "https://ras-ems-frontend.vercel.app"],
+  advanced: {
+    defaultCookieAttributes: {
+      sameSite: "none",
+      secure: true,
+    },
+  },
   emailAndPassword: {
     enabled: true,
   },

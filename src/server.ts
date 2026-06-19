@@ -25,7 +25,10 @@ app.use(express.json({
     req.rawBody = buf;
   }
 }));
-app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:3000", process.env.FRONTEND_URL || "https://ras-ems-frontend.vercel.app"],
+  credentials: true
+}));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/classrooms", classroomRoutes);

@@ -20,7 +20,7 @@ model User {
   name      String
   email     String   @unique
   emailVerified Boolean   @default(false)
-  password  String
+  password  String?
   role          Role      @default(UNASSIGNED)
   image     String?
   status        String    @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
@@ -83,6 +83,7 @@ model Account {
   refreshTokenExpiresAt DateTime?
   scope                 String?
   password              String?   
+  createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 }
 

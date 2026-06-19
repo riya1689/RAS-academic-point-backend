@@ -9,7 +9,8 @@ const router: express.Router = express.Router();
 
 router.post("/signup", async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    const { password, name } = req.body;
+    const email = req.body.email.toLowerCase();
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -55,7 +56,8 @@ router.post("/signup", async (req, res) => {
 
 router.post("/otp/verify", async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const { otp } = req.body;
+    const email = req.body.email.toLowerCase();
 
     const cachedOtp = await redis.get(`otp:${email}`);
 
@@ -167,7 +169,8 @@ router.post("/otp/verify", async (req, res) => {
 
 router.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { password } = req.body;
+    const email = req.body.email.toLowerCase();
 
     const user = await prisma.user.findUnique({
       where: { email }

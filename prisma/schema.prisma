@@ -12,6 +12,7 @@ enum Role {
   TEACHER
   STUDENT
   GUARDIAN
+  UNASSIGNED
 }
 
 model User {
@@ -20,7 +21,7 @@ model User {
   email     String   @unique
   emailVerified Boolean   @default(false)
   password  String
-  role          Role      @default(STUDENT)
+  role          Role      @default(UNASSIGNED)
   image     String?
   status        String    @default("ACTIVE") // ACTIVE, INACTIVE, SUSPENDED
   createdAt DateTime @default(now())

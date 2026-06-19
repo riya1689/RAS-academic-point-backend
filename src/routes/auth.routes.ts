@@ -7,9 +7,9 @@ import { sendOTPEmail } from "../utils/mailer.js";
 
 const router: express.Router = express.Router();
 
-router.post("/signup/student", async (req, res) => {
+router.post("/signup", async (req, res) => {
   try {
-    const { email, password, name, class: className, roll, department, schoolName, phone } = req.body;
+    const { email, password, name } = req.body;
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -26,24 +26,18 @@ router.post("/signup/student", async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     await redis.set(`otp:${email}`, otp, "EX", 300);
 
-    const studentData = {
+    const pendingData = {
       email,
       hashedPassword,
       name,
-      role: "STUDENT",
-      className,
-      roll,
-      department,
-      schoolName,
-      phone
+      role: "UNASSIGNED",
     };
 
-    await redis.set(`pending_signup:${email}`, JSON.stringify(studentData), "EX", 600);
+    await redis.set(`pending_signup:${email}`, JSON.stringify(pendingData), "EX", 600);
 
     await sendOTPEmail(email, otp).catch(console.error);
 
@@ -51,109 +45,9 @@ router.post("/signup/student", async (req, res) => {
       message: "An OTP has send to your mail. Please verify."
     });
   } catch (error: any) {
-    console.error("Student signup error:", error);
+    console.error("Signup error:", error);
     return res.status(500).json({
-      message: "Student signup process failed.",
-      error: error.message || error
-    });
-  }
-});
-
-router.post("/signup/teacher", async (req, res) => {
-  try {
-    const { email, password, name, teacherId, department, qualification } = req.body;
-
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-      include: { student: true, teacher: true, guardian: true }
-    });
-
-    if (existingUser) {
-      const isOrphaned = !existingUser.student && !existingUser.teacher && !existingUser.guardian;
-      if (isOrphaned) {
-        await prisma.user.delete({ where: { id: existingUser.id } });
-      } else {
-        return res.status(400).json({ message: "Email already exists" });
-      }
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    await redis.set(`otp:${email}`, otp, "EX", 300);
-
-    const finalTeacherId = teacherId || `TCH-${Math.floor(1000 + Math.random() * 9000)}`;
-
-    const teacherData = {
-      email,
-      hashedPassword,
-      name,
-      role: "TEACHER",
-      teacherId: finalTeacherId,
-      department,
-      qualification
-    };
-
-    await redis.set(`pending_signup:${email}`, JSON.stringify(teacherData), "EX", 600);
-
-    await sendOTPEmail(email, otp).catch(console.error);
-
-    return res.status(200).json({
-      message: "An OTP has send to your mail. Please verify."
-    });
-  } catch (error: any) {
-    console.error("Teacher signup error:", error);
-    return res.status(500).json({
-      message: "Teacher signup process failed.",
-      error: error.message || error
-    });
-  }
-});
-
-router.post("/signup/guardian", async (req, res) => {
-  try {
-    const { email, password, name, studentId } = req.body;
-
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-      include: { student: true, teacher: true, guardian: true }
-    });
-
-    if (existingUser) {
-      const isOrphaned = !existingUser.student && !existingUser.teacher && !existingUser.guardian;
-      if (isOrphaned) {
-        await prisma.user.delete({ where: { id: existingUser.id } });
-      } else {
-        return res.status(400).json({ message: "Email already exists" });
-      }
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    await redis.set(`otp:${email}`, otp, "EX", 300);
-
-    const guardianData = {
-      email,
-      hashedPassword,
-      name,
-      role: "GUARDIAN",
-      studentId
-    };
-
-    await redis.set(`pending_signup:${email}`, JSON.stringify(guardianData), "EX", 600);
-
-    await sendOTPEmail(email, otp).catch(console.error);
-
-    return res.status(200).json({
-      message: "An OTP has send to your mail. Please verify."
-    });
-  } catch (error: any) {
-    console.error("Guardian signup error:", error);
-    return res.status(500).json({
-      message: "Guardian signup process failed.",
+      message: "Signup process failed.",
       error: error.message || error
     });
   }
@@ -178,51 +72,14 @@ router.post("/otp/verify", async (req, res) => {
     if (pendingSignupString) {
       const pendingData = JSON.parse(pendingSignupString);
 
-      const newUser = await prisma.$transaction(async (tx) => {
-        const user = await tx.user.create({
-          data: {
-            name: pendingData.name,
-            email: pendingData.email,
-            password: pendingData.hashedPassword,
-            role: pendingData.role,
-            emailVerified: true,
-          },
-        });
-
-        if (pendingData.role === "STUDENT") {
-          await tx.student.create({
-            data: {
-              userId: user.id,
-              class: pendingData.className,
-              roll: pendingData.roll,
-              department: pendingData.department,
-              schoolName: pendingData.schoolName,
-              phone: pendingData.phone,
-              email: pendingData.email,
-              role: "STUDENT",
-            },
-          });
-        } else if (pendingData.role === "TEACHER") {
-          await tx.teacher.create({
-            data: {
-              userId: user.id,
-              teacherId: pendingData.teacherId,
-              department: pendingData.department,
-              qualification: pendingData.qualification,
-              role: "TEACHER",
-            },
-          });
-        } else if (pendingData.role === "GUARDIAN") {
-          await tx.guardian.create({
-            data: {
-              userId: user.id,
-              studentId: pendingData.studentId,
-              role: "GUARDIAN",
-            },
-          });
-        }
-
-        return user;
+      const newUser = await prisma.user.create({
+        data: {
+          name: pendingData.name,
+          email: pendingData.email,
+          password: pendingData.hashedPassword,
+          role: pendingData.role,
+          emailVerified: true,
+        },
       });
 
       await redis.del(`pending_signup:${email}`);
@@ -400,11 +257,11 @@ router.post("/complete-profile", async (req, res) => {
         await tx.student.create({
           data: {
             userId: usr.id,
-            class: profileData.className,
-            roll: profileData.roll,
-            department: profileData.department,
-            schoolName: profileData.schoolName,
-            phone: profileData.phone,
+            class: "Pending", // Admin will add manually
+            roll: "Pending",  // Admin will add manually
+            department: "Pending", // Admin will add manually
+            schoolName: profileData.schoolName, // Institution Name
+            phone: "Pending", // Admin will add manually
             email: usr.email,
             role: "STUDENT",
           },
@@ -413,9 +270,9 @@ router.post("/complete-profile", async (req, res) => {
         await tx.teacher.create({
           data: {
             userId: usr.id,
-            teacherId: profileData.teacherId,
+            teacherId: `TCH-${Math.floor(1000 + Math.random() * 9000)}`, // Auto generate
             department: profileData.department,
-            qualification: profileData.qualification,
+            qualification: "Pending", // Admin will add manually
             role: "TEACHER",
           },
         });

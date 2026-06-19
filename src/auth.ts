@@ -16,7 +16,7 @@ export const auth = betterAuth({
       role: {
         type: "string",
         required: true,
-        defaultValue: "STUDENT"
+        defaultValue: "UNASSIGNED"
       }
     }
   },

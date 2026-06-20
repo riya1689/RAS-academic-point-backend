@@ -168,11 +168,70 @@ router.post(
           classId,
           amount: String(amount)
         },
-        success_url: `${frontendUrl}/dashboard/student?enrollment=success&classId=${classId}`,
+        success_url: `${frontendUrl}/dashboard/student?enrollment=success&classId=${classId}&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${frontendUrl}/dashboard/student?enrollment=cancel`
       });
 
       return res.status(200).json({ sessionId: session.id, checkoutUrl: session.url });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
+router.get(
+  "/enrollments/verify-session",
+  requireAuth,
+  requireRole(["STUDENT"]),
+  async (req: AuthRequest, res: Response): Promise<any> => {
+    try {
+      const { session_id } = req.query;
+      if (!session_id || typeof session_id !== "string") {
+        return res.status(400).json({ message: "session_id is required" });
+      }
+
+      const session = await stripe.checkout.sessions.retrieve(session_id);
+      if (!session) {
+        return res.status(404).json({ message: "Session not found" });
+      }
+
+      if (session.payment_status === "paid") {
+        const metadata = session.metadata;
+        if (metadata && (metadata.type === "enrollment" || metadata.classId)) {
+          const studentId = metadata.studentId;
+          const classId = metadata.classId;
+          const amount = parseFloat(metadata.amount || "0");
+          const transactionId = session.payment_intent as string || session.id;
+          
+          const existing = await prisma.enrollment.findUnique({
+            where: { studentId_classId: { studentId, classId } }
+          });
+
+          if (!existing) {
+            const count = await prisma.enrollment.count({ where: { classId } });
+            const rollNum = String(count + 1).padStart(4, "0");
+            const cleanClassId = classId.replace(/[^a-zA-Z0-9]/g, "");
+            const classRoll = `R-${cleanClassId}-${rollNum}`;
+            const badge = `${classId}_badge`;
+            const invoiceNumber = `INV-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+            await prisma.enrollment.create({
+              data: {
+                studentId,
+                classId,
+                classRoll,
+                badge,
+                transactionId,
+                invoiceNumber,
+                amountPaid: amount,
+                status: "ACTIVE"
+              }
+            });
+          }
+        }
+      }
+      return res.status(200).json({ status: session.payment_status });
     } catch (error) {
       console.error(error);
       return res.status(500).json({ message: "Internal server error" });

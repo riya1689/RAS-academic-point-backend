@@ -181,6 +181,33 @@ router.post(
 );
 
 router.get(
+  "/enrollments/my",
+  requireAuth,
+  requireRole(["STUDENT"]),
+  async (req: AuthRequest, res: Response): Promise<any> => {
+    try {
+      const student = await prisma.student.findUnique({
+        where: { userId: req.user.id }
+      });
+
+      if (!student) {
+        return res.status(404).json({ message: "Student profile not found" });
+      }
+
+      const enrollments = await prisma.enrollment.findMany({
+        where: { studentId: student.id },
+        orderBy: { createdAt: "desc" }
+      });
+
+      return res.status(200).json({ enrollments });
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
+
+router.get(
   "/salary/my",
   requireAuth,
   requireRole(["TEACHER"]),

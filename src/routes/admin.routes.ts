@@ -665,13 +665,22 @@ router.get("/revenue/finance", async (req: AuthRequest, res: Response): Promise<
   try {
     const tuitionPayments = await prisma.tuitionPayment.findMany({});
     const salaries = await prisma.teacherSalary.findMany({});
+    const courseEnrollments = await prisma.enrollment.findMany({
+      include: {
+        student: {
+          include: { user: { select: { name: true, email: true } } }
+        }
+      },
+      orderBy: { createdAt: "desc" }
+    });
 
     // Calculations
     const monthlyRev = tuitionPayments.filter(p => p.status === "PAID").reduce((sum, p) => sum + p.amount, 0);
+    const enrollmentRev = courseEnrollments.reduce((sum, e) => sum + e.amountPaid, 0);
     const refunds = tuitionPayments.filter(p => p.status === "REFUNDED").reduce((sum, p) => sum + p.amount, 0);
     const salariesPaid = salaries.filter(s => s.status === "PAID").reduce((sum, s) => sum + s.amount, 0);
 
-    const netProfit = monthlyRev - refunds - salariesPaid;
+    const netProfit = (monthlyRev + enrollmentRev) - refunds - salariesPaid;
 
     // Monthly breakdown for growth chart (Tuition payments over time)
     // We group by month (e.g. January, February)
@@ -688,12 +697,13 @@ router.get("/revenue/finance", async (req: AuthRequest, res: Response): Promise<
 
     return res.status(200).json({
       finance: {
-        monthlyRev,
+        monthlyRev: monthlyRev + enrollmentRev,
         refunds,
         netProfit,
-        extraCurriculum: 2000 // Custom static / extra curriculum revenue mentioned in wireframe
+        extraCurriculum: enrollmentRev // Repurposing extraCurriculum to show total Enrollment Revenue
       },
-      growthChart
+      growthChart,
+      courseEnrollments // Returning the actual enrollment records
     });
   } catch (error: any) {
     console.error("Failed to get finance details:", error);

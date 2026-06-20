@@ -198,7 +198,7 @@ router.get(
 
       if (session.payment_status === "paid") {
         const metadata = session.metadata;
-        if (metadata && (metadata.type === "enrollment" || metadata.classId)) {
+        if (metadata && metadata.studentId && metadata.classId) {
           const studentId = metadata.studentId;
           const classId = metadata.classId;
           const amount = parseFloat(metadata.amount || "0");

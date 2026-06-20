@@ -79,7 +79,7 @@ router.post(
         return res.status(404).json({ message: "Student profile not found" });
       }
 
-      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      const frontendUrl = req.headers.origin || process.env.FRONTEND_URL || "http://localhost:3000";
 
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ["card"],
@@ -144,7 +144,7 @@ router.post(
         return res.status(400).json({ message: `Already enrolled in ${classId}` });
       }
 
-      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      const frontendUrl = req.headers.origin || process.env.FRONTEND_URL || "http://localhost:3000";
 
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ["card"],
